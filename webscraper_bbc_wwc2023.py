@@ -7,7 +7,7 @@ Script that scrapes  BBC Women's World Cup 2023 site for article content
 https://www.bbc.com/sport/football/womens-world-cup
 
 
-
+python webscraper_bbc_wwc2023.py
 
 """
 
@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 import os
-
+from pathlib import Path
 
 FRONT_PAGE_URL = "https://www.bbc.com/sport/football/womens-world-cup"
 BASE_URL = "https://www.bbc.com"
@@ -24,11 +24,15 @@ SCORES_FIXTURES_URL = "https://www.bbc.com/sport/football/womens-world-cup/score
 class BBCWWCScraper:
     """
     Class that scrapes a BBC Women's World Cup site
+
     """
     def __init__(self):
-
+        """
+            Creates download directory if it doesn't exist
+        """
         self.visited_urls = []
         self.destdir = "/tmp/wwc2023"
+        Path(self.destdir).mkdir(parents=True, exist_ok=True)
 
 
     def scrape_front_page(self):
@@ -36,7 +40,6 @@ class BBCWWCScraper:
           Using patterns obtained by inspection, scrape front page links.
           For each link, visit page and download content
         """
-
         html_content = requests.get(FRONT_PAGE_URL).text
         soup = BeautifulSoup(html_content, "html.parser")
 
@@ -75,26 +78,6 @@ class BBCWWCScraper:
         print("\n")
         return header_data
 
-    def get_article_body(self, soup):
-        """
-        Obtain article body content
-        """
-        tags=["p", "h3", "th", "td", "span"]
-        classes = ["", "story-body__crosshead", "qa-introduction gel-pica-bold", "gs-o-table__cell",
-                 "gs-o-table__cell gs-o-table__cell--bold table__header--bold",
-                 "ssrcss-1q0x1qg-Paragraph e1jhz7w10"]
-
-        fixture_classes=["gs-u-display-none gs-u-display-block@m qa-full-team-name sp-c-fixture__team-name-trunc",
-                       "sp-c-fixture__number sp-c-fixture__number--away sp-c-fixture__number--ft",
-                       "sp-c-fixture__number sp-c-fixture__number--home sp-c-fixture__number--ft"
-                       ]
-        body_data = []
-        for para in soup.find_all(tags, attrs={'class': classes+fixture_classes}):
-        #for para in soup.find_all("p"):
-            text = para.get_text()
-            body_data.append(text)
-
-        return body_data
 
     def get_article_body_and_links(self, soup):
         """
@@ -187,10 +170,8 @@ class BBCWWCScraper:
 
         content = f"{header}\n".join(body)
 
-
         if file_prefix:
             file_prefix += "_"
-
 
         filepath = f"{self.destdir}/{file_prefix}{filename}.txt"
         self.save_content(content, filepath)
@@ -208,7 +189,6 @@ class BBCWWCScraper:
             print(f"1. about to download content for {link}")
             file_prefix=os.path.basename(link)
             self.download_content(link, file_prefix, level+1)
-            #self.visited_urls.append(link)
 
 
 
@@ -261,13 +241,10 @@ class BBCWWCScraper:
 
 
 
-#get_fixture_page_links()
-
     def retrieve_all_content(self):
         """
          Retrieve all content
         """
-
         front_page_links = self.scrape_front_page()
 
         for link in front_page_links:
